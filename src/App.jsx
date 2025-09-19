@@ -5,6 +5,11 @@ import { generateContent } from "./index.js";
 const synth = window.speechSynthesis;
 let selectedVoice = null;
 
+// 🔧 DEBUG: Log env variables
+console.log("✅ VITE_OPENWEATHER_KEY:", import.meta.env.VITE_OPENWEATHER_KEY);
+console.log("✅ VITE_NEWS_KEY:", import.meta.env.VITE_NEWS_KEY);
+console.log("✅ VITE_GEMINI_KEY:", import.meta.env.VITE_GEMINI_KEY);
+
 // 🆕 Cute Live Clock Component
 const LiveClock = ({ time, darkMode }) => (
   <div
@@ -38,16 +43,14 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [clock, setClock] = useState(new Date());
-  const [voiceEnabled, setVoiceEnabled] = useState(true); // 🆕 Voice toggle
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const messagesEndRef = useRef(null);
 
-  // 🕒 Live Clock
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // 🎙 Load voices (async safe)
   const getVoicesAsync = () => {
     return new Promise((resolve) => {
       let voices = synth.getVoices();
@@ -56,13 +59,11 @@ const App = () => {
     });
   };
 
-  // 🖱 Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     localStorage.setItem("chatHistory", JSON.stringify(messages));
   }, [messages]);
 
-  // 🎤 Speak Function (Fix for Mobile)
   const speak = async (text) => {
     if (!voiceEnabled || !text || !synth) return;
 
@@ -115,12 +116,16 @@ const App = () => {
         cityQuery
       )}&appid=${import.meta.env.VITE_OPENWEATHER_KEY}&units=metric`;
 
+      console.log("🌦 Fetching Weather:", apiUrl);
+
       const res = await fetch(apiUrl);
       const data = await res.json();
-      if (data.cod !== 200) throw new Error(data.message);
+      console.log("🌦 Weather API Response:", data);
 
+      if (data.cod !== 200) throw new Error(data.message);
       addMessage(data, "weather");
     } catch (err) {
+      console.error("❌ Weather Fetch Error:", err);
       addMessage(`Weather Error: ${err.message}`, "error");
     }
   };
@@ -145,27 +150,20 @@ const App = () => {
       let keyword = "";
 
       const matchCountry = userQuery.match(/news in ([a-zA-Z]+)/);
-      if (matchCountry) {
-        countryCode = countryMap[matchCountry[1].toLowerCase()] || "";
-      }
+      if (matchCountry) countryCode = countryMap[matchCountry[1].toLowerCase()] || "";
 
       const matchTopic = userQuery.match(/news about (.+)/);
-      if (matchTopic) {
-        keyword = matchTopic[1].trim();
-      }
+      if (matchTopic) keyword = matchTopic[1].trim();
 
       const url = keyword
-        ? `https://newsapi.org/v2/everything?q=${encodeURIComponent(
-            keyword
-          )}&pageSize=5&language=en&sortBy=publishedAt&apiKey=${
-            import.meta.env.VITE_NEWS_KEY
-          }`
-        : `https://newsapi.org/v2/top-headlines?${
-            countryCode ? `country=${countryCode}&` : ""
-          }pageSize=5&language=en&apiKey=${import.meta.env.VITE_NEWS_KEY}`;
+        ? `https://newsapi.org/v2/everything?q=${encodeURIComponent(keyword)}&pageSize=5&language=en&sortBy=publishedAt&apiKey=${import.meta.env.VITE_NEWS_KEY}`
+        : `https://newsapi.org/v2/top-headlines?${countryCode ? `country=${countryCode}&` : ""}pageSize=5&language=en&apiKey=${import.meta.env.VITE_NEWS_KEY}`;
+
+      console.log("📰 Fetching News:", url);
 
       const res = await fetch(url);
       const data = await res.json();
+      console.log("📰 News API Response:", data);
 
       if (!data.articles || data.articles.length === 0) {
         addMessage("No news found. Try 'news about technology' or 'news in india'.", "text");
@@ -174,6 +172,7 @@ const App = () => {
 
       addMessage({ countryCode: countryCode || "global", articles: data.articles }, "news");
     } catch (err) {
+      console.error("❌ News Fetch Error:", err);
       addMessage(`Error loading news: ${err.message}`, "error");
     }
   };
@@ -181,19 +180,18 @@ const App = () => {
   // 😂 Jokes
   const fetchJoke = async () => {
     try {
+      console.log("😂 Fetching Joke...");
       const res = await fetch(`https://v2.jokeapi.dev/joke/Any?type=single`);
       const data = await res.json();
-      if (data?.joke) {
-        addMessage(`😂 ${data.joke}`, "text");
-      } else {
-        addMessage("Couldn't find a joke right now. Try again!", "text");
-      }
+      console.log("😂 Joke API Response:", data);
+      if (data?.joke) addMessage(`😂 ${data.joke}`, "text");
+      else addMessage("Couldn't find a joke right now. Try again!", "text");
     } catch (err) {
+      console.error("❌ Joke Fetch Error:", err);
       addMessage(`Joke Error: ${err.message}`, "error");
     }
   };
 
-  // 🧠 Main Query Handler
   const handleQuery = async (text = query) => {
     if (!text.trim()) return;
     addMessage(text, "text", true, false);
@@ -216,14 +214,17 @@ const App = () => {
       } else if (lower.includes("clock")) {
         addMessage(new Date().toLocaleTimeString(), "text");
       } else {
+        console.log("🤖 Sending to Gemini:", text);
         const aiResponse = await generateContent(text);
+        console.log("🤖 Gemini Response:", aiResponse);
         let safeResponse =
           typeof aiResponse === "string"
             ? aiResponse
             : aiResponse?.content || JSON.stringify(aiResponse);
         addMessage(safeResponse, "text");
       }
-    } catch {
+    } catch (err) {
+      console.error("❌ Main Query Handler Error:", err);
       addMessage("⚠️ Something went wrong.", "error");
     } finally {
       setLoading(false);
