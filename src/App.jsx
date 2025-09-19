@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { generateContent } from "./index.js";
+console.log("Gemini Key:", import.meta.env.VITE_GEMINI_KEY);
+console.log("Weather Key:", import.meta.env.VITE_OPENWEATHER_KEY);
+console.log("News Key:", import.meta.env.VITE_NEWS_KEY);
 
 const synth = window.speechSynthesis;
 let selectedVoice = null;
