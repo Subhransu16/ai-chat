@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { generateContent } from "./index.js";
-console.log("Gemini Key:", import.meta.env.VITE_GEMINI_KEY);
-console.log("Weather Key:", import.meta.env.VITE_OPENWEATHER_KEY);
-console.log("News Key:", import.meta.env.VITE_NEWS_KEY);
 
 const synth = window.speechSynthesis;
 let selectedVoice = null;
@@ -41,6 +38,7 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [clock, setClock] = useState(new Date());
+  const [voiceEnabled, setVoiceEnabled] = useState(true); // 🆕 Voice toggle
   const messagesEndRef = useRef(null);
 
   // 🕒 Live Clock
@@ -49,19 +47,14 @@ const App = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 🎙 Load voices
-  useEffect(() => {
-    const loadVoices = () => {
-      const voices = synth.getVoices();
-      selectedVoice =
-        voices.find((v) => v.name.toLowerCase().includes("female")) ||
-        voices.find((v) => v.name.toLowerCase().includes("google uk english female")) ||
-        voices.find((v) => v.name.toLowerCase().includes("google us english")) ||
-        voices[0];
-    };
-    loadVoices();
-    synth.onvoiceschanged = loadVoices;
-  }, []);
+  // 🎙 Load voices (async safe)
+  const getVoicesAsync = () => {
+    return new Promise((resolve) => {
+      let voices = synth.getVoices();
+      if (voices.length) return resolve(voices);
+      synth.onvoiceschanged = () => resolve(synth.getVoices());
+    });
+  };
 
   // 🖱 Auto-scroll
   useEffect(() => {
@@ -69,19 +62,27 @@ const App = () => {
     localStorage.setItem("chatHistory", JSON.stringify(messages));
   }, [messages]);
 
-  const speak = (text) => {
-    if (!text || !synth) return;
+  // 🎤 Speak Function (Fix for Mobile)
+  const speak = async (text) => {
+    if (!voiceEnabled || !text || !synth) return;
+
+    const voices = await getVoicesAsync();
+    selectedVoice =
+      voices.find((v) => v.name.toLowerCase().includes("female")) ||
+      voices.find((v) => v.name.toLowerCase().includes("google uk english female")) ||
+      voices.find((v) => v.name.toLowerCase().includes("google us english")) ||
+      voices[0];
+
     const utter = new SpeechSynthesisUtterance(text);
-    if (selectedVoice) utter.voice = selectedVoice;
-    utter.pitch = 1.3;
-    utter.rate = 1.05;
+    utter.voice = selectedVoice;
+    utter.pitch = 1.1;
+    utter.rate = 1.0;
+
     synth.cancel();
     synth.speak(utter);
   };
 
-  const stopSpeaking = () => {
-    synth.cancel();
-  };
+  const stopSpeaking = () => synth.cancel();
 
   const addMessage = (data, type = "text", isUser = false, speakText = true) => {
     const msg = { type, isUser };
@@ -275,6 +276,9 @@ const App = () => {
           <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)}>
             {darkMode ? "☀️" : "🌙"}
           </button>
+          <button onClick={() => setVoiceEnabled((prev) => !prev)}>
+            {voiceEnabled ? "🔊" : "🔇"}
+          </button>
         </div>
       </div>
 
@@ -348,7 +352,7 @@ const App = () => {
         />
         <button onClick={() => handleQuery(query)}>➤</button>
         <button onClick={handleVoiceInput}>🎤</button>
-        <button onClick={stopSpeaking}>🔇</button>
+        <button onClick={stopSpeaking}>⏹</button>
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ body {
   transition: background 0.3s ease;
 }
 
+/* HEADER */
 .chat-header {
   background: linear-gradient(to right, #007bff, #4da6ff);
   color: white;
@@ -29,6 +30,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .chat-header img {
@@ -45,6 +47,7 @@ body {
   cursor: pointer;
 }
 
+/* MESSAGES */
 .output-box {
   flex: 1;
   padding: 16px;
@@ -61,6 +64,7 @@ body {
   padding: 10px 14px;
   border-radius: 12px;
   max-width: 80%;
+  word-wrap: break-word;
 }
 
 .chat-bubble.user {
@@ -69,10 +73,13 @@ body {
   color: white;
 }
 
+/* QUICK BUTTONS */
 .quick-buttons {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  padding: 8px;
+  justify-content: center;
 }
 
 .quick-buttons button {
@@ -82,18 +89,22 @@ body {
   padding: 6px 12px;
   font-size: 14px;
   cursor: pointer;
+  flex: 1 1 calc(50% - 10px); /* makes buttons wrap nicely on small screens */
+  text-align: center;
 }
 
 .quick-buttons button:hover {
   background: #cce0ff;
 }
 
+/* CHAT INPUT */
 .chat-input {
   display: flex;
   align-items: center;
   border-top: 1px solid #e0e0e0;
   padding: 10px;
   gap: 8px;
+  background: var(--card-bg, #fff);
 }
 
 .chat-input textarea {
@@ -103,6 +114,9 @@ body {
   outline: none;
   font-size: 14px;
   background: transparent;
+  min-height: 40px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 .chat-input button {
@@ -114,10 +128,80 @@ body {
   height: 40px;
   font-size: 18px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .typing-indicator {
   font-size: 12px;
   opacity: 0.6;
   padding: 5px;
+  text-align: center;
+}
+
+/* 📱 MOBILE RESPONSIVENESS */
+@media (max-width: 768px) {
+  body {
+    height: auto;
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  .app-container {
+    width: 95%;
+    height: 100vh;
+    max-height: 100%;
+    border-radius: 0;
+  }
+
+  .chat-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    text-align: left;
+  }
+
+  .output-box {
+    max-height: none;
+    flex: 1;
+    padding: 12px;
+  }
+
+  .quick-buttons {
+    gap: 4px;
+  }
+
+  .quick-buttons button {
+    flex: 1 1 calc(50% - 5px);
+    font-size: 13px;
+    padding: 8px;
+  }
+
+  .chat-input {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .chat-input button {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .chat-input textarea {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-buttons button {
+    flex: 1 1 100%; /* stack buttons full width on very small screens */
+  }
+
+  .chat-header h3 {
+    font-size: 16px;
+  }
+
+  .chat-header span {
+    font-size: 12px;
+  }
 }
